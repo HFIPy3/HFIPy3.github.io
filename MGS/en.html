@@ -3,16 +3,425 @@
 <head>
 <meta charset="UTF-8">
 <title>MGS Counter</title>
-<style>
-body { background-color:#000000; color:#FFFFFF; }
-a:link { color:#00FFFF; }
-a:visited { color:#66FFFF; }
-a:hover { color:#FF9999; }
-a:active { color:#FF0000; }
-</style>
+<link rel="stylesheet" href="CSS.css">
+<script language="JavaScript" src="Mat.js"></script>
+<script language="JavaScript">
+let n=0, M={}, Mlist, CoxA, CoxAinv, CoxB, CoxBinv, Imax, insin, prjs, injs, prjB, fct, cpt, mgVs, mgEs, iruVs;
+
+function inv_triangle(L){
+   let i, j, k; const s=L.length, Z=genE(s);
+   for(j=0; j<s; j++){ for(i=j+1; i<s; i++){ if(L[i][j]){ for(k=0; k<s; k++){ Z[i][k]-=L[i][j]*Z[j][k]; } } } }
+   return Z;
+}
+
+function triangulation(X){
+   const s=X.length, L=mCpy(X), Y=genE(s), Z=genE(s); let flag=true;
+   function swap1(T, a, b){ let U=T[a]; T[a]=T[b]; T[b]=U; } 
+   function swap2(T, a, b){ for(let u, t=0; t<s; t++){ u=T[t][a]; T[t][a]=T[t][b]; T[t][b]=u; } } 
+   function reduc(){ 
+      let i, j, k;
+      for(k=s-1; k>0; k--){ for(i=0; i<s-k; i++){ 
+         j=i+k;
+         if(L[i][j]){ swap1(L, i, j); swap2(L, i, j); swap1(Y, i, j); swap2(Z, i, j); return true; }
+      } }
+      return false;
+   }
+   while(flag){ flag=reduc(); }
+   return [Y, L, Z];
+}
+
+function make_Cox(){ 
+   let E=nowQ, G=nowN, i, j, k, p, q; n=E.length; 
+   if(G.charAt(0)=="A"&&G.length>=7){ n--; } 
+   let S=[], topVs=[], table=new Array(n+1), preVs=new Array(n+1), postVs=new Array(n+1);
+   for(i=0; i<=n; i++){ table[i]=0; preVs[i]=[]; postVs[i]=[]; } 
+   for(i=0; i<E.length; i++){ preVs[E[i][1]].push(E[i][0]); postVs[E[i][0]].push(E[i][1]); } 
+   for(i=0; i<=n; i++){ if(preVs[i].length==0){ S.push(i); } } 
+   for(i=0; i<S.length; i++){ 
+      topVs.push(S[i]);
+      for(j=0; j<postVs[S[i]].length; j++){
+         k=postVs[S[i]][j]; table[k]++;
+         if(table[k]==preVs[k].length){ S.push(k); }
+      }
+   }
+   if(n!=topVs.length-1){ document.getElementById("info1").innerHTML="That orientation won't lead to a finite dimension."; return false; }   // ちゃんとトポロジカルソートできているか正当性チェック
+
+   let paths=new Array(n+1), CarA=new Array(n+1), CarB=new Array(n+1);
+   for(i=0; i<=n; i++){ CarA[i]=new Array(n+1); } 
+   for(j=0; j<=n; j++){
+      for(i=0; i<=n; i++){ paths[i]=(i==j)?1:0; } 
+      for(p of topVs){ for(q of postVs[p]){ paths[q]+=paths[p]; } }
+      for(i=0; i<=n; i++){ CarA[i][j]=paths[i]; } 
+   } 
+   for(k=0; k<=n; k++){ for(CarB[k]=new Array(n+1), i=0; i<=n; i++){ CarB[k][i]=new Array(n+1); } }
+   for(k=0; k<=n; k++){ for(j=0; j<=n; j++){
+      for(i=0; i<=n; i++){ paths[i]=(i==j)?1:0; }
+      for(p of topVs){ for(q of postVs[p]){ if(p!=k&&q!=k){ paths[q]+=paths[p]; } } }
+      for(i=0; i<=n; i++){ CarB[k][i][j]=paths[i]; } 
+   } } 
+
+   let u, v; prjs=new Array(n+1); injs=new Array(n+1); prjB=new Array(n+1);
+   for(i=0; i<=n; i++){ 
+      u=new Array(n+1); v=new Array(n+1);
+      for(j=0; j<=n; j++){ u[j]=CarA[j][i]; v[j]=CarA[i][j]; }
+      prjs[i]=String(u); injs[i]=String(v);
+   } 
+   for(k=0; k<=n; k++){ for(prjB[k]=new Array(n+1), i=0; i<=n; i++){ 
+      u=new Array(n+1);
+      for(j=0; j<=n; j++){ u[j]=CarB[k][j][i]; }
+      prjB[k][i]=(i!=k)?String(u):"none";
+   } } 
+
+   let P, Pinv, L, CarAinv, CarBinv=new Array(n+1);
+   [P, L, Pinv]=triangulation(CarA); CarAinv=mPrd(mPrd(Pinv, inv_triangle(L)), P);
+   for(k=0; k<=n; k++){ [P, L, Pinv]=triangulation(CarB[k]); CarBinv[k]=mPrd(mPrd(Pinv, inv_triangle(L)), P); }
+
+   CoxA=mPrd(trans(CarA), scala(-1, CarAinv)); CoxAinv=mPrd(scala(-1, CarA), trans(CarAinv)); CoxB=new Array(n+1); CoxBinv=new Array(n+1);
+   for(k=0; k<=n; k++){ CoxB[k]=mPrd(trans(CarB[k]), scala(-1, CarBinv[k])); CoxBinv[k]=mPrd(scala(-1, CarB[k]), trans(CarBinv[k])); }
+   document.getElementById("info1").innerHTML="Complete: construction of the Coxeter matrix<br>"; 
+   if(G.length==2){ document.getElementById("info3").innerHTML="Running: calculation of indecomposable modules<br>"; setTimeout("make_Mlist_fin();", 100); }
+   else{ document.getElementById("info2").innerHTML="Running: listing non-sincere indecomposable modules<br>"; setTimeout("make_insin();", 100); } 
+}
+
+function tauA(v){ let i, j, z=new Array(n+1); for(i=0; i<=n; i++){ for(z[i]=0, j=0; j<=n; j++){ z[i]+=CoxA[i][j]*v[j]; } } return z; }	
+function tauAinv(v){ let i, j, z=new Array(n+1); for(i=0; i<=n; i++){ for(z[i]=0, j=0; j<=n; j++){ z[i]+=CoxAinv[i][j]*v[j]; } } return z; }	
+function tauB(k, v){ let i, j, z=new Array(n+1); for(i=0; i<=n; i++){ for(z[i]=0, j=0; j<=n; j++){ z[i]+=CoxB[k][i][j]*v[j]; } } return z; }	
+function tauBinv(k, v){ let i, j, z=new Array(n+1); for(i=0; i<=n; i++){ for(z[i]=0, j=0; j<=n; j++){ z[i]+=CoxBinv[k][i][j]*v[j]; } } return z; }	
+function non_nega(v){ for(let i=0; i<v.length; i++){ if(v[i]<0){ return false; } } return true; }	
+function to_vec(w){ return w.split(",").map(e=>Number(e)); }	
+
+function make_insin(){
+   let i, k, v; insin=new Set();
+   for(k=0; k<=n; k++){ for(i=0; i<=n; i++){ 
+      if(i==k){ continue; }else{ v=to_vec(prjB[k][i]); }
+      while(non_nega(v)){ insin.add(String(v)); v=tauBinv(k, v); }
+   } }
+   document.getElementById("info2").innerHTML="Complete: listing non-sincere indecomposable modules ("+insin.size+" total)<br>";
+   document.getElementById("info3").innerHTML="Running: calculation of indecomposable modules that may be involved in MGS<br>";
+   setTimeout("make_Mlist();", 100); 
+}
+
+function is_prjs(v){ for(let w=String(v), i=0; i<=n; i++){ if(prjs[i]==w){ return i; } } return n+1; }
+function is_injs(v){ for(let w=String(v), i=0; i<=n; i++){ if(injs[i]==w){ return i; } } return n+1; }
+
+function make_Mlist_fin(){
+   let i, j, s; M={}; Mlist=[];
+   for(i=0; i<=n; i++){ Mlist.push("0,"+i+",0"); M[Mlist[i]]=to_vec(prjs[i]); } 
+   for(i=0; i<=n; i++){ 
+      for(j=1; is_injs(M["0,"+i+","+(j-1)])==n+1; j++){ 
+         s="0,"+i+","+j; Mlist.push(s); M[s]=tauAinv(M["0,"+i+","+(j-1)]); 
+      } 
+   } 
+   document.getElementById("info3").innerHTML="Complete: calculation of indecomposable modules ("+Mlist.length+" total)<br>";
+   document.getElementById("info4").innerHTML="Running: precalculation to construct the Hasse quiver<br>";
+   setTimeout("pre_calculation();",100); 
+}
+
+function make_Mlist(){
+   let i, j, k, u, v, c, s, t=0, Pmax=(new Array(n+1)).fill(0), Rlist=[], temp, ksht={}; Imax=(new Array(n+1)).fill(0); M={};   // kshtは既出リスト
+   for(let w of insin){
+      if(ksht[w]){ continue; } 
+      for(c=0, temp=[], u=to_vec(w), v=to_vec(w); ; c++){
+         i=is_prjs(u); j=is_injs(v);
+         if(i<=n){ Pmax[i]=Math.max(Pmax[i], c+1); break; }
+         if(j<=n){ Imax[j]=Math.max(Imax[j], c+1); break; }
+         if(c>0&&w==String(u)){ for(k=0; k<c; k++){ s="1,"+c+","+t; Rlist.push(s); M[s]=temp[k]; ksht[String(M[s])]=1; t++; } break; }   // 今までのc個に"1,c,t"と情報を付けてMに格納　既出リストに加える
+         temp.push(u); u=tauA(u); v=tauAinv(v);
+      }
+   }
+   Mlist=[]; const b=Math.max(...Pmax, ...Imax); let B;
+   for(i=0; i<=n; i++){ Mlist.push("0,"+i+",0"); M[Mlist[i]]=to_vec(prjs[i]); }  
+   for(i=0; i<=n; i++){ for(B=b+Pmax[i], j=1; j<B; j++){ s="0,"+i+","+j; Mlist.push(s); M[s]=tauAinv(M["0,"+i+","+(j-1)]); } }  
+   Mlist=Mlist.concat(Rlist); 
+   for(i=0; i<=n; i++){ s="2,"+i+",0"; Mlist.push(s); M[s]=to_vec(injs[i]); } 
+   for(i=0; i<=n; i++){ for(B=b+Imax[i], j=1; j<B; j++){ s="2,"+i+","+j; Mlist.push(s); M[s]=tauA(M["2,"+i+","+(j-1)]); } } 
+   document.getElementById("info3").innerHTML="Complete: calculation of indecomposable modules that may be involved in MGS ("+Mlist.length+" total)<br>";
+   document.getElementById("info4").innerHTML="Running: precalculation to construct the Hasse quiver<br>";
+   setTimeout("pre_calculation();",100); 
+}
+
+function rep_tauA(v, p){ if(p){ return tauA(rep_tauA(v, p-1)); }else{ return v; } } 
+function rep_tauAinv(v, p){ if(p){ return tauAinv(rep_tauAinv(v, p-1)); }else{ return v; } } 
+function is_prjB(k, v){ for(let w=String(v), i=0; i<=n; i++){ if(prjB[k][i]==w){ return i; } } return n+1; }
+
+function case_regreg(X, Y){
+   if(X[1]!=Y[1]){ return true; } 
+   let i, k, r, u, v;
+   for(k=0; k<=n; k++){ for(r=0; r<X[1]; r++){ 
+      u=rep_tauA(M[String(X)], r); v=rep_tauA(M[String(Y)], r);
+      if(u[k]!=0||v[k]!=0){ continue; } 
+      while(1){
+         if(is_prjB(k, v)<=n){ return true; }else{ i=is_prjB(k, u); }
+         if(i<=n){ if(tauB(k, v)[i]==0){ return true; }else{ break; } }
+         u=tauB(k, u); v=tauB(k, v);
+      }
+   } }
+   return false;
+}
+
+function rigid_check(X, Y){ 
+   if(X[0]>Y[0]){ return true; }
+   if(X[0]==0){
+      if(Y[0]==0){ if(X[2]>=Y[2] || M["0,"+Y[1]+","+(Y[2]-X[2]-1)][X[1]]==0){ return true; }else{ return false; } }
+      if(Y[0]==1){ if( rep_tauA(M[String(Y)], (X[2]+1)%Y[1])[X[1]]==0 ){ return true; }else{ return false; } }	
+      if(Y[0]==2){ if(Y[2]+X[2]+1<Imax[Y[1]] && M["2,"+Y[1]+","+(Y[2]+X[2]+1)][X[1]]==0){ return true; }else{ return false; } }
+   }
+   if(X[0]==1){
+      if(Y[0]==1){ return case_regreg(X, Y); } 
+      if(Y[0]==2){ if( rep_tauAinv(M[String(X)], (Y[2]+1)%X[1])[Y[1]]==0 ){ return true; }else{ return false; } } 
+   }
+   if(X[0]==2){ if(X[2]<=Y[2] || M["2,"+X[1]+","+(X[2]-Y[2]-1)][Y[1]]==0){ return true; }else{ return false; } } 
+}   
+
+function pre_calculation(){
+   const t0=performance.now();
+   let i, j, k, X, Y; const ml=Mlist.length; fct=new Array(ml); cpt=new Array(ml+n+1);
+   for(i=0; i<ml; i++){	
+      for(fct[i]=(new Array(ml)).fill(0), cpt[i]=[], j=0; j<ml; j++){
+         X=Mlist[i].split(",").map(e=>Number(e)); Y=Mlist[j].split(",").map(e=>Number(e));
+         if(i!=j&&rigid_check(X, Y)){ fct[i][j]=1; if(rigid_check(Y, X)){ cpt[i].push(j); } }
+      }
+      for(j=0; j<=n; j++){ if(M[Mlist[i]][j]==0){ cpt[i].push(ml+j); } }
+   }
+   for(i=0; i<=n; i++){ 
+      for(cpt[ml+i]=[], j=0; j<ml; j++){ if(M[Mlist[j]][i]==0){ cpt[ml+i].push(j); } }
+      for(j=0; j<=n; j++){ if(j!=i){ cpt[ml+i].push(ml+j); } }
+   }
+   const t1=performance.now();
+   document.getElementById("info4").innerHTML="Complete: precalculation to construct the Hasse quiver"+timing(t0, t1)+"<br>";
+   document.getElementById("info5").innerHTML="Running: construction of the Hasse quiver<br>";
+   setTimeout("make_mutation_graph();", 100);
+}
+
+function make_mutation_graph(){ 
+   const t0=performance.now();
+   let i, j, s, t, mTj, T, U, nmbring={}; const L=Mlist.length; 
+   function meet(X, Y){
+      let k, Z=[];
+      for(k=0; k<X.length; k++){ if(Y.indexOf(X[k])!=-1){ Z.push(X[k]); } }
+      return Z;
+   }
+   function mut(x){
+      let k, X; if(x){ k=1; X=cpt[T[0]]; }else{ k=2; X=cpt[T[1]]; } 
+      for(; k<=n; k++){ if(x!=k){ X=meet(X, cpt[T[k]]); } }  
+      if(X.length==1){ return false; } 
+      if(T[x]==X[0]){ return X[1]; }else if(T[x]==X[1]){ return X[0]; }
+      else{ alert("ERROR: The results of the mutation are inconsistent."); return false; }
+   } 
+   function nxt(x, mTx){ 
+      let k, Z=[]; for(k=0; k<=n; k++){ if(x!=k){ Z.push(T[k]); }else{ Z.push(mTx); } }
+      return Z.sort((a, b)=>(a-b)); 
+   }
+   for(mgVs=[[]], mgEs=[], i=0; i<=n; i++){ mgVs[0].push(i); } 
+   nmbring[String(mgVs[0])]=0; 
+   for(i=0; i<mgVs.length; i++){ 
+   for(T=mgVs[i], j=0; j<=n; j++){ 
+      if(T[j]>=L){ break; }else{ mTj=mut(j); if(mTj===false){ continue; } }
+      if(mTj>=L||fct[mTj][T[j]]){  
+         U=nxt(j, mTj); s=String(U); t=nmbring[s];
+         if(t){ mgEs.push([i, t]); }else{ nmbring[s]=mgVs.length; mgEs.push([i, mgVs.length]); mgVs.push(U); } 
+      }
+   }
+   } 
+   let sink=[];
+   const V=mgVs.length, E=mgEs.length, table=new Array(V), preVs=new Array(V), S=[];
+   for(i=0; i<=n; i++){ sink.push(L+i); } sink=String(sink);
+   for(i=V-1; i>0; i--){ if(sink==String(mgVs[i])){ sink=i; break; } } 
+
+   for(i=0; i<V; i++){ table[i]=0; preVs[i]=[]; } 
+   for(i=0; i<E; i++){ preVs[mgEs[i][1]].push(mgEs[i][0]); }  
+   S.push(sink); table[sink]=1;
+   for(i=0; i<S.length; i++){
+      for(j of preVs[S[i]]){ if(!table[j]){ table[j]=1; S.push(j); } }
+   }
+   let ansV=0, ansE=0;
+   for(i=0; i<V; i++){ if(table[i]){ ansV++; } } 
+   for(i=0; i<E; i++){ if(table[mgEs[i][1]]){ ansE++; } }
+   const t1=performance.now();
+   document.getElementById("info5").innerHTML="Complete: construction of the finite Hasse quiver ("+ansV+" nodes, "+ansE+" edges)"+timing(t0, t1)+"<br>";
+   document.getElementById("info6").innerHTML="Running: counting the maximal green sequences<br>";
+   setTimeout("count_MGSneo();", 100);
+}
+
+function geho(){ 
+   for(let i=1; i<=10; i++){ document.getElementById("info"+i).innerHTML=""; }
+   document.getElementById("info7").style.display="none";
+   document.getElementById("info1").innerHTML="Running: construction of Coxeter matrix<br>";
+   make_Cox();
+}
+
+function timing(s, t){ return " <a style='color:#00FFFF;font-size:10px;'>("+String(Math.round(t-s)/1000)+"sec)</a>"; }
+
+function count_MGSneo(){
+   const t0=performance.now();
+   let i, j, k, u, v, sink=[];
+   const ml=Mlist.length, V=mgVs.length, E=mgEs.length, table=new Array(V), preVs=new Array(V), postVs=new Array(V), topVs=[], S=[0];
+   for(i=0; i<=n; i++){ sink.push(ml+i); } sink=String(sink); 
+   for(i=V-1; i>0; i--){ if(sink==String(mgVs[i])){ sink=i; break; } }  
+   for(i=0; i<V; i++){ table[i]=0; preVs[i]=[]; postVs[i]=[]; }  
+   for(i=0; i<E; i++){ preVs[mgEs[i][1]].push(mgEs[i][0]); postVs[mgEs[i][0]].push(mgEs[i][1]); }  
+   for(i=0; i<S.length; i++){ 
+      topVs.push(S[i]);
+      for(j=0; j<postVs[S[i]].length; j++){
+         k=postVs[S[i]][j]; table[k]++;
+         if(table[k]==preVs[k].length){ S.push(k); }
+      }
+   }
+   if(V!=topVs.length){ alert("ERROR: There is a closed circuit in the Hasse quiver."); return false; }
+   for(table[0]=[1n], i=1; i<V; i++){ table[i]=[]; }
+   for(i=0; i<V; i++){ 
+      for(u=topVs[i], j=0; j<postVs[u].length; j++){
+         for(v=postVs[u][j], k=table[v].length; k<=table[u].length; k++){ table[v].push(0n); }
+         for(k=1; k<=table[u].length; k++){ table[v][k]=table[v][k]+table[u][k-1]; } 
+      }
+      if(u!=sink){ table[u]=[]; } 
+   }
+   let total=0n, flg=false, come="Complete: counting the maximal green sequences", rslt="<br><table border='1' cellspacing='1' cellpadding='1' style='font-size:8px;'><tr><th>length</th><th>number</th></tr>";
+   for(i=0; i<table[sink].length; i++){
+      if((!flg)&&(table[sink][i]>0n)){ flg=true; come+=" (shortest: "+i+", longest: "+(table[sink].length-1)+")"; }   // 最短経路から最長経路まで出力　no gap予想もチェックできる
+      if(flg){ rslt+=("<tr><td>"+i+"</td><td>"+String(table[sink][i])+"　</td></tr>"); total+=table[sink][i]; }
+   }
+   const t1=performance.now();
+   come+=""+timing(t0, t1)+"<br><input type='button' value='Toggle between showing and hiding details.' onclick='hyoji();'>";
+   rslt+="<tr><td>total</td><td>"+total+"　</td></tr></table>";
+   document.getElementById("info6").innerHTML=come;
+   document.getElementById("info7").innerHTML=rslt;
+}
+
+function hyoji(){ info7.style.display=(info7.style.display=="none")?"block":"none"; }
+
+let Quivers={}, nowQ, nowN;
+function make_Quivers(){
+   let i, j, nm;
+   for(i=1; i<=8; i++){ 
+      nm="A"+(i+1)+""; Quivers[nm]=[];
+      for(j=0; j<i; j++){ Quivers[nm].push([j, j+1]); }
+   }
+   for(i=3; i<=8; i++){ 
+      nm="D"+(i+1)+""; Quivers[nm]=[[0,2],[1,2],[2,3]];
+      for(j=3; j<i; j++){ Quivers[nm].push([j, j+1]); }
+   }
+   Quivers["E6"]=[[0,3],[1,2],[2,3],[3,4],[4,5]];
+   Quivers["E7"]=[[0,3],[1,2],[2,3],[3,4],[4,5],[5,6]];
+   Quivers["E8"]=[[0,3],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]];
+   for(i=2; i<=9; i++){
+      nm="A"+i+"tilde"; Quivers[nm]=[];
+      for(j=0; j<=i; j++){ Quivers[nm].push((i==j)?[0, j]:[j, j+1]); }
+   }
+   for(i=4; i<=9; i++){ 
+      nm="D"+i+"tilde"; Quivers[nm]=[[0,2],[1,2],[2,3]];
+      for(j=4; j<=i; j++){ Quivers[nm].push((i==j)?[j-2, j]:[j-1, j]); }
+   }
+   Quivers["E6tilde"]=[[0,1],[1,4],[2,3],[3,4],[4,5],[5,6]];
+   Quivers["E7tilde"]=[[0,4],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]];
+   Quivers["E8tilde"]=[[0,3],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7],[7,8]];
+   select_quiv('D4tilde'); 
+}
+
+function change_ar(t, u){ 
+   const cn=t.className, tmp=nowQ[u][0];
+   nowQ[u][0]=nowQ[u][1]; nowQ[u][1]=tmp;
+   if(cn=="arR"){ t.className="arL"; }
+   if(cn=="arL"){ t.className="arR"; }
+   if(cn=="arU"){ t.className="arD"; }
+   if(cn=="arD"){ t.className="arU"; }
+}
+
+function select_quiv(Q){
+   nowQ=Quivers[Q]; nowN=Q;
+   let i, L=nowQ.length, rslt="<table border='0'>";
+   function LorR(p){ if(nowQ[p][0]>nowQ[p][1]){ return "arL"; }else{ return "arR"; } }
+   function abkb(p){ if(nowQ[p][0]>nowQ[p][1]){ return "arR"; }else{ return "arL"; } }
+   function UorD(p){ if(nowQ[p][0]>nowQ[p][1]){ return "arU"; }else{ return "arD"; } }
+   if(Q.charAt(0)=="A"&&Q.length==2){  
+      rslt+="<tr>";
+      for(i=0; i<L; i++){ rslt+="<td class='nd'>"+i+"</td><td><a class='"+LorR(i)+"' onclick='change_ar(this, " +i+ ");'></a></td>"; }
+      rslt+="<td class='nd'>"+L+"</td></tr></table>";
+   }
+   if(Q.charAt(0)=="D"&&Q.length==2){ 
+      rslt+="<tr><td></td><td></td><td class='nd'>0</td>";
+      for(i=2; i<L; i++){ rslt+="<td></td><td></td>"; }
+      rslt+="</tr><tr><td></td><td></td><td><a class='"+UorD(0)+"' onclick='change_ar(this, 0);'></a></td>";
+      for(i=2; i<L; i++){ rslt+="<td></td><td></td>"; }
+      rslt+="</tr><tr>";
+      for(i=1; i<L; i++){ rslt+="<td class='nd'>"+i+"</td><td><a class='"+LorR(i)+"' onclick='change_ar(this, " +i+ ");'></a></td>"; }
+      rslt+="<td class='nd'>"+L+"</td></tr></table>";
+   }
+   if(Q.charAt(0)=="E"&&Q.length==2){
+      rslt+="<tr><td></td><td></td><td></td><td></td><td class='nd'>0</td>";
+      for(i=3; i<L; i++){ rslt+="<td></td><td></td>"; }
+      rslt+="</tr><tr><td></td><td></td><td></td><td></td><td><a class='"+UorD(0)+"' onclick='change_ar(this, 0);'></a></td>";
+      for(i=3; i<L; i++){ rslt+="<td></td><td></td>"; }
+      rslt+="</tr><tr>";
+      for(i=1; i<L; i++){ rslt+="<td class='nd'>"+i+"</td><td><a class='"+LorR(i)+"' onclick='change_ar(this, " +i+ ");'></a></td>"; }
+      rslt+="<td class='nd'>"+L+"</td></tr></table>";
+   }
+   if(Q.charAt(0)=="A"&&Q.length==7){  
+      rslt+="<tr>"; L--;
+      for(i=0; i<L; i++){ rslt+="<td class='nd'>"+i+"</td><td><a class='"+LorR(i)+"' onclick='change_ar(this, " +i+ ");'></a></td>"; }
+      rslt+="<td class='nd'>"+L+"</td><td><a class='"+abkb(i)+"' onclick='change_ar(this, " +L+ ");'></a></td><td class='nd'>0</td></tr></table>";
+   }
+   if(Q.charAt(0)=="D"&&Q.length==7){  
+      rslt+="<tr><td></td><td></td><td class='nd'>0</td>";
+      for(i=3; i<L; i++){ rslt+="<td></td><td></td>"; }
+      rslt+="</tr><tr><td></td><td></td><td><a class='"+UorD(0)+"' onclick='change_ar(this, 0);'></a></td>";
+      for(i=3; i<L; i++){ rslt+="<td></td><td></td>"; }
+      rslt+="</tr><tr><td class='nd'>1</td>";
+      for(i=2; i<L; i++){ rslt+="<td><a class='"+LorR(i-1)+"' onclick='change_ar(this, " +(i-1)+ ");'></a></td><td class='nd'>"+i+"</td>"; }
+      rslt+="</tr><tr>";
+      for(i=3; i<L; i++){ rslt+="<td></td><td></td>"; }
+      rslt+="<td><a class='"+UorD(L-1)+"' onclick='change_ar(this, " +(L-1)+ ");'></a></td><td></td><td></td></tr><tr>";
+      for(i=3; i<L; i++){ rslt+="<td></td><td></td>"; }
+      rslt+="<td class='nd'>"+L+"</td><td></td><td></td></tr></table>";
+   }
+   if(Q=="E6tilde"){
+      rslt+="<tr><td></td><td></td><td></td><td></td><td class='nd'>0</td><td></td><td></td><td></td><td></td></tr>";
+      rslt+="<tr><td></td><td></td><td></td><td></td><td><a class='"+UorD(0)+"' onclick='change_ar(this, 0);'></a></td><td></td><td></td><td></td><td></td></tr>";
+      rslt+="<tr><td></td><td></td><td></td><td></td><td class='nd'>1</td><td></td><td></td><td></td><td></td></tr>";
+      rslt+="<tr><td></td><td></td><td></td><td></td><td><a class='"+UorD(1)+"' onclick='change_ar(this, 1);'></a></td><td></td><td></td><td></td><td></td></tr>";
+      rslt+="<tr><td class='nd'>2</td>";
+      for(i=3; i<=6; i++){ rslt+="<td><a class='"+LorR(i-1)+"' onclick='change_ar(this, " +(i-1)+ ");'></a></td><td class='nd'>"+i+"</td>"; }
+      rslt+="</tr></table>";
+   }
+   if(Q=="E7tilde"){
+      rslt+="<tr><td></td><td></td><td></td><td></td><td></td><td></td><td class='nd'>0</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>";
+      rslt+="<tr><td></td><td></td><td></td><td></td><td></td><td></td><td><a class='"+UorD(0)+"' onclick='change_ar(this, 0);'></a></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>";
+      rslt+="<tr><td class='nd'>1</td>";
+      for(i=2; i<=7; i++){ rslt+="<td><a class='"+LorR(i-1)+"' onclick='change_ar(this, " +(i-1)+ ");'></a></td><td class='nd'>"+i+"</td>"; }
+      rslt+="</tr></table>";
+   }
+   if(Q=="E8tilde"){
+      rslt+="<tr><td></td><td></td><td></td><td></td><td class='nd'>0</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>";
+      rslt+="<tr><td></td><td></td><td></td><td></td><td><a class='"+UorD(0)+"' onclick='change_ar(this, 0);'></a></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>";
+      rslt+="<tr><td class='nd'>1</td>";
+      for(i=2; i<=8; i++){ rslt+="<td><a class='"+LorR(i-1)+"' onclick='change_ar(this, " +(i-1)+ ");'></a></td><td class='nd'>"+i+"</td>"; }
+      rslt+="</tr></table>";
+   }
+   document.getElementById("Quiv").innerHTML=rslt;
+}
+</script>
 </head>
-<body>
-<a style="color:#88FF88;font-size:36px;">MGS Counter（ver.?.?）</a><br>
-We are preparing now.<br>
+<body onload="make_Quivers();">
+<a style="color:#88FF88;font-size:36px;">MGS Counter（ver.1.0）</a><br>
+Please run on a browser that supports BigInt type such as Google Chrome.<br>
+The algorithm used in this tool is based on joint research with Dr. Kase at Okayama University of Science.<br>
+<select class="inpt" onchange="select_quiv(this.value);">
+  <option value="A2">A₂</option><option value="A3">A₃</option><option value="A4">A₄</option>
+  <option value="A5">A₅</option><option value="A6">A₆</option><option value="A7">A₇</option>
+  <option value="A8">A₈</option><option value="A9">A₉</option>
+  <option value="D4">D₄</option><option value="D5">D₅</option><option value="D6">D₆</option>
+  <option value="D7">D₇</option><option value="D8">D₈</option><option value="D9">D₉</option>
+  <option value="E6">E₆</option><option value="E7">E₇</option><option value="E8">E₈</option>
+  <option value="A2tilde">A₂ tilde</option><option value="A3tilde">A₃ tilde</option><option value="A4tilde">A₄ tilde</option>
+  <option value="A5tilde">A₅ tilde</option><option value="A6tilde">A₆ tilde</option><option value="A7tilde">A₇ tilde</option>
+  <option value="A8tilde">A₈ tilde</option><option value="A9tilde">A₉ tilde</option>
+  <option value="D4tilde" selected>D₄ tilde</option><option value="D5tilde">D₅ tilde</option><option value="D6tilde">D₆ tilde</option>
+  <option value="D7tilde">D₇ tilde</option><option value="D8tilde">D₈ tilde</option><option value="D9tilde">D₉ tilde</option>
+  <option value="E6tilde">E₆ tilde</option><option value="E7tilde">E₇ tilde</option><option value="E8tilde">E₈ tilde</option>
+</select>
+<input class="butn" type="button" value="Calculate the case of the following orientation!" onclick="geho();"><br>
+<div id="Quiv"></div>You can change the direction by clicking the arrows.<hr>
+<div id="info1"></div><div id="info2"></div><div id="info3"></div><div id="info4"></div><div id="info5"></div><div id="info6"></div>
+<div id="info7"></div><div id="info8"></div><div id="info9"></div><div id="info10"></div><br>
 </body>
 </html>
