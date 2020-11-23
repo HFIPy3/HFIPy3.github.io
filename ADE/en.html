@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>AR-quivers of path alg. of ADE Dynkin type</title>
+<link rel="stylesheet" href="CSS.css">
+<script language="JavaScript">
+let Quivers={}, nowQ, nowN;
+function make_Quivers(){
+  let i, j, nm;
+  for(i=1; i<=7; i++){
+    nm="A"+(i+1)+""; Quivers[nm]=[];
+    for(j=0; j<i; j++){ Quivers[nm].push([j, j+1]); }
+  }
+  for(i=3; i<=7; i++){
+    nm="D"+(i+1)+""; Quivers[nm]=[[0,2],[1,2],[2,3]];
+    for(j=3; j<i; j++){ Quivers[nm].push([j, j+1]); }
+  }
+  Quivers["E6"]=[[0,3],[1,2],[2,3],[3,4],[4,5]];
+  Quivers["E7"]=[[0,3],[1,2],[2,3],[3,4],[4,5],[5,6]];
+  Quivers["E8"]=[[0,3],[1,2],[2,3],[3,4],[4,5],[5,6],[6,7]];
+  select_quiv("E6");
+}
+
+function change_ar(t, u){
+  const cn=t.className, tmp=nowQ[u][0];
+  nowQ[u][0]=nowQ[u][1]; nowQ[u][1]=tmp;
+  if(cn=="arR"){ t.className="arL"; }
+  if(cn=="arL"){ t.className="arR"; }
+  if(cn=="arU"){ t.className="arD"; }
+  if(cn=="arD"){ t.className="arU"; }
+}
+
+function select_quiv(Q){
+  nowQ=Quivers[Q]; nowN=Q;
+  let i, L=nowQ.length, par=document.getElementById("ARquiv"), rslt="<table border='0'>";
+  function LorR(p){ if(nowQ[p][0]>nowQ[p][1]){ return "arL"; }else{ return "arR"; } }
+  function UorD(p){ if(nowQ[p][0]>nowQ[p][1]){ return "arU"; }else{ return "arD"; } }
+  while(par.firstChild){ par.removeChild(par.firstChild); }
+  if(Q.charAt(0)=="A"){
+    rslt+="<tr>";
+    for(i=0; i<L; i++){ rslt+="<td class='nd'>"+i+"</td><td><a class='"+LorR(i)+"' onclick='change_ar(this, " +i+ ");'></a></td>"; }
+    rslt+="<td class='nd'>"+L+"</td></tr></table>";
+  }
+  if(Q.charAt(0)=="D"){ 
+    rslt+="<tr><td></td><td></td><td class='nd'>0</td>";
+    for(i=2; i<L; i++){ rslt+="<td></td><td></td>"; }
+    rslt+="</tr><tr><td></td><td></td><td><a class='"+UorD(0)+"' onclick='change_ar(this, 0);'></a></td>";
+    for(i=2; i<L; i++){ rslt+="<td></td><td></td>"; }
+    rslt+="</tr><tr>";
+    for(i=1; i<L; i++){ rslt+="<td class='nd'>"+i+"</td><td><a class='"+LorR(i)+"' onclick='change_ar(this, " +i+ ");'></a></td>"; }
+    rslt+="<td class='nd'>"+L+"</td></tr></table>";
+  }
+  if(Q.charAt(0)=="E"){
+    rslt+="<tr><td></td><td></td><td></td><td></td><td class='nd'>0</td>";
+    for(i=3; i<L; i++){ rslt+="<td></td><td></td>"; }
+    rslt+="</tr><tr><td></td><td></td><td></td><td></td><td><a class='"+UorD(0)+"' onclick='change_ar(this, 0);'></a></td>";
+    for(i=3; i<L; i++){ rslt+="<td></td><td></td>"; }
+    rslt+="</tr><tr>";
+    for(i=1; i<L; i++){ rslt+="<td class='nd'>"+i+"</td><td><a class='"+LorR(i)+"' onclick='change_ar(this, " +i+ ");'></a></td>"; }
+    rslt+="<td class='nd'>"+L+"</td></tr></table>";
+  }
+  document.getElementById("Quiv").innerHTML=rslt;
+}
+
+function main(){
+  let i, j, k=0, m=0, L=nowQ.length+1, c=nowN.charAt(0), dv=new Array(L), st=(new Array(L)).fill(0), per, p, q;
+  function addv(u, v){ let d=0, w=[]; while(d<u.length){ w.push(u[d]+v[d]); d++; } return w; }
+  function subv(u, v){ let d=0, w=[]; while(d<u.length){ w.push(Math.max(u[d]-v[d], 0)); d++; } return w; }
+  for(i=0; i<L; i++){ 
+    dv[i]=new Array(40);
+    for(j=0; j<40; j++){ dv[i][j]=(new Array(L)).fill(0); }     
+  }
+  if(c=='D'){
+    st[2]=(nowQ[0][0]==0)?st[0]-1:st[0]; m=Math.min(m, st[2]); 
+    st[1]=(nowQ[1][0]==1)?st[2]+1:st[2]; m=Math.min(m, st[1]); 
+    k=2;
+  }
+  else if(c=='E'){
+    st[3]=(nowQ[0][0]==0)?st[0]:st[0]+1; m=Math.min(m, st[3]); 
+    st[2]=(nowQ[2][0]==2)?st[3]:st[3]-1; m=Math.min(m, st[2]); 
+    st[1]=(nowQ[1][0]==1)?st[2]+1:st[2]; m=Math.min(m, st[1]); 
+    k=3;
+  }
+  while(k<L-1){ st[k+1]=(nowQ[k][0]==k)?st[k]-k%2:st[k]+(k+1)%2; m=Math.min(m, st[k+1]); k++; }
+  st=st.map(e=>e-m+1);
+  if(c=='D'){ per=[1,0]; i=3; }else{ per=[]; i=1; } 
+  while(i<=L-1){ per.push(i); i+=2; }
+  if(c=='A'){ i=0; }else{ per.push(2); i=4; } 
+  if(c=='E'){ per.push(0); } 
+  while(i<=L-1){ per.push(i); i+=2; }
+
+  for(j=1; j<40; j++){ for(i of per){ 
+    k=(i%2)?j-1:j;
+    if(i==0){ if(c=='A'){ p=dv[1][j]; }else{ p=(c=='D')?dv[2][j-1]:dv[3][j]; } }
+    else if(i==1){ p=(c=='A')?addv(dv[0][k], dv[2][k]):dv[2][k]; }
+    else{ p=(i==L-1)?dv[i-1][k]:addv(dv[i-1][k], dv[i+1][k]); } 
+    if((c=='D'&&i==2)||(c=='E'&&i==3)){ p=addv(p, dv[0][k]); }
+    if(st[i]==j){ q=(new Array(L)).fill(0); q[i]=1; p=addv(p, q); }
+    dv[i][j]=subv(p, dv[i][j-1]); 
+  } }
+
+  function VtoT(v){
+    let d, l=v.length, s="<table border='0' cellspacing='0' cellpadding='0'><tr>";
+    if(c=='A'){ for(d of v){ s+=("<td class='dvs'>"+d+"</td>"); } }
+    else{ 
+      s+="<td></td>"+((c=='E')?"<td></td>":"")+"<td class='dvs'>"+v[0]+"</td>"; 
+      for(d=(c=='D')?3:4; d<l; d++){ s+="<td></td>"; } s+="</tr><tr>";
+      for(d=1; d<l; d++){ s+=("<td class='dvs'>"+v[d]+"</td>"); }
+    }
+    s+="</tr></table>";
+    return s;
+  }
+  function isPosi(v){
+    for(let d of v){ if(d){ return true; } }
+    return false;
+  }
+  let par, div, b, bx, by, r=50; 
+  par=document.getElementById("ARquiv");
+  while(par.firstChild){ par.removeChild(par.firstChild); } 
+  b=par.getBoundingClientRect(); bx=b.left; by=b.top;
+  for(j=1; j<40; j++){ for(i=0; i<L; i++){
+    if(!isPosi(dv[i][j])){ continue; }
+    div=document.createElement('div'); div.style.position="absolute"; div.innerHTML=VtoT(dv[i][j]); div.style.visibility="hidden";
+    par.appendChild(div);
+    let sty=getComputedStyle(div.firstChild), w=parseFloat(sty.width), h=parseFloat(sty.height);
+    if(c=='D'&&i==0){ div.style.left=(bx+18+2*r*(j-1)-w/2)+"px"; div.style.top=(by+r+r/2-h/2)+"px"; }
+    else if(c=='E'&&i==0){ div.style.left=(bx+18+2*r*(j-1)-w/2+r)+"px"; div.style.top=(by+2*r+r/2-h/2)+"px"; }
+    else{ div.style.left=(bx+18+2*r*(j-1)-w/2+((i%2)?0:r))+"px"; div.style.top=(by+r*i-h/2)+"px"; }
+    div.style.visibility="visible";
+  } }
+  for(j=1; j<40; j++){ for(i=0; i<L-1; i++){ 
+    div=document.createElement('div'); div.style.position="absolute";
+    if(c=='D'&&i==0){ 
+      div.className="ir3"; div.style.left=(5+bx+2*r*(j-1)-r/2)+"px"; div.style.top=(by+r+r/2+r/4)+"px";
+      if(isPosi(dv[0][j])&&isPosi(dv[2][j-1])){ par.appendChild(div); }
+    }
+    else if(c=='E'&&i==0){ 
+      div.className="ir3"; div.style.left=(5+bx+2*r*(j-1)+r-r/2)+"px"; div.style.top=(by+2*r+r/2+r/4)+"px";
+      if(isPosi(dv[0][j])&&isPosi(dv[3][j])){ par.appendChild(div); }
+    }
+    else{ 
+      div.className="ir1"; div.style.left=(bx+2*r*(j-1)+((i%2)?0:r))-r/2+"px"; div.style.top=(by+r*i)+r/2+"px";
+      if(isPosi(dv[i][j])&&isPosi(dv[i+1][(i%2)?j-1:j])){ par.appendChild(div); }
+    }
+    div=document.createElement('div'); div.style.position="absolute";
+    if(c=='D'&&i==0){
+      div.className="ir4"; div.style.left=(10+bx+2*r*(j-1)+r/2)+"px"; div.style.top=(by+r+r/2+r/4)+"px";
+      if(isPosi(dv[0][j])&&isPosi(dv[2][j])){ par.appendChild(div); }
+    }
+    else if(c=='E'&&i==0){ 
+      div.className="ir4"; div.style.left=(10+bx+2*r*(j-1)+r+r/2)+"px"; div.style.top=(by+2*r+r/2+r/4)+"px";
+      if(isPosi(dv[0][j])&&isPosi(dv[3][j+1])){ par.appendChild(div); }
+    }
+    else{
+      div.className="ir2"; div.style.left=(bx+2*r*(j-1)+((i%2)?0:r))+r/2+"px"; div.style.top=(by+r*i)+r/2+"px";
+      if(isPosi(dv[i][j])&&isPosi(dv[i+1][(i%2)?j:j+1])){ par.appendChild(div); }
+    }
+  } }
+}
+</script>
+</head>
+<body onload="make_Quivers();">
+<a style="color:#FF88FF;font-size:28px;">AR-quivers of path alg. of ADE Dynkin type</a><br>
+This script shows the AR-quiver Γ<sub>Δ</sub> for a given Dynkin quiver Δ.<br>
+<select class="inpt" onchange="select_quiv(this.value);">
+  <option value="A2">A₂</option><option value="A3">A₃</option><option value="A4">A₄</option>
+  <option value="A5">A₅</option><option value="A6">A₆</option><option value="A7">A₇</option>
+  <option value="A8">A₈</option>
+  <option value="D4">D₄</option><option value="D5">D₅</option><option value="D6">D₆</option>
+  <option value="D7">D₇</option><option value="D8">D₈</option>
+  <option value="E6" selected>E₆</option><option value="E7">E₇</option><option value="E8">E₈</option>
+</select>
+<input class="butn" type="button" value="Draw!" onclick="main();"><br>
+<div id="Quiv"></div>You can change the direction by clicking the arrows.<br><br>
+<div id="ARquiv"></div><br>
+</body>
+</html>
