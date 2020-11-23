@@ -1,0 +1,35 @@
+
+.inpt { background:#000000; color:#99FFFF; font-size:18px; margin:5px; width:150px; height:32px; cursor:pointer; }
+.inpt:hover { background:#000066; color:#FFFFFF; }
+.butn { background:#000000; color:#FFFF99; font-size:18px; margin:5px; height:32px; cursor:pointer; }
+.butn:hover { background:#000066; color:#FFFFFF; }
+.intv { font-size:12px; line-height:95%; font-family:monospace; text-align:center; }
+.rslt { text-align:center;margin:5px; }
+
+body { background-color:#000000; color:#FFFFFF; }
+a:link { color:#00FFFF; }
+a:visited { color:#66FFFF; }
+a:hover { color:#FF9999; }
+a:active { color:#FF0000; }
+
+.nd { font-size:18px; }
+
+.arL, .arR { display: block; width: 30px; height: 4px; background: #66FFFF; cursor: pointer; }
+.arL::after{ display:block; position:relative; content:""; top:-7px; left:2px; width:10px; height:10px; border:4px solid; border-color:transparent transparent #66FFFF #66FFFF; transform:rotate(45deg); }
+.arR::after{ display:block; position:relative; content:""; top:-7px; left:10px; width:10px; height:10px; border:4px solid; border-color:#66FFFF #66FFFF transparent transparent; transform:rotate(45deg); }
+.arL:hover, .arR:hover { display: block; width: 30px; height: 4px; background: #66FF66; }
+.arL:hover::after{ display:block; position:relative; content:""; top:-7px; left:2px; width:10px; height:10px; border:4px solid; border-color:transparent transparent #66FF66 #66FF66; transform:rotate(45deg); }
+.arR:hover::after{ display:block; position:relative; content:""; top:-7px; left:10px; width:10px; height:10px; border:4px solid; border-color:#66FF66 #66FF66 transparent transparent; transform:rotate(45deg); }
+
+.arU, .arD{ display: block; width: 4px; height: 30px; margin: 0 auto; background: #66FFFF; cursor: pointer; }
+.arU::after{ display:block; position:relative; content:""; top:2px; left:-7px; width:10px; height:10px; border:4px solid; border-color:#66FFFF #66FFFF transparent transparent; transform:rotate(-45deg);  }
+.arD::after{ display:block; position:relative; content:""; top:10px; left:-7px; width:10px; height:10px; border:4px solid; border-color:transparent transparent #66FFFF #66FFFF; transform:rotate(-45deg); }
+.arU:hover, .arD:hover{ display: block; width: 4px; height: 30px; margin: 0 auto; background: #66FF66;  }
+.arU:hover::after{ display:block; position:relative; content:""; top:2px; left:-7px; width:10px; height:10px; border:4px solid; border-color:#66FF66 #66FF66 transparent transparent; transform:rotate(-45deg);  }
+.arD:hover::after{ display:block; position:relative; content:""; top:10px; left:-7px; width:10px; height:10px; border:4px solid; border-color:transparent transparent #66FF66 #66FF66; transform:rotate(-45deg); }
+
+.dvs { font-size:10px; line-height:95%; font-family:monospace; text-align:center; }
+.ir1 { display: block; width: 36px; height: 1px; background: #66FF66; transform:rotate(-45deg); }
+.ir2 { display: block; width: 36px; height: 1px; background: #66FF66; transform:rotate(45deg); }
+.ir3 { display: block; width: 20px; height: 1px; background: #66FF66; transform:rotate(-30deg); }
+.ir4 { display: block; width: 20px; height: 1px; background: #66FF66; transform:rotate(30deg); }
