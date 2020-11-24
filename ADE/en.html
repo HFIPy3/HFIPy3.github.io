@@ -118,42 +118,41 @@ function main(){
   let par, div, b, bx, by, r=50; 
   par=document.getElementById("ARquiv");
   while(par.firstChild){ par.removeChild(par.firstChild); } 
-  b=par.getBoundingClientRect(); bx=b.left; by=b.top;
   for(j=1; j<40; j++){ for(i=0; i<L; i++){
     if(!isPosi(dv[i][j])){ continue; }
     div=document.createElement('div'); div.style.position="absolute"; div.innerHTML=VtoT(dv[i][j]); div.style.visibility="hidden";
     par.appendChild(div);
     let sty=getComputedStyle(div.firstChild), w=parseFloat(sty.width), h=parseFloat(sty.height);
-    if(c=='D'&&i==0){ div.style.left=(bx+18+2*r*(j-1)-w/2)+"px"; div.style.top=(by+r+r/2-h/2)+"px"; }
-    else if(c=='E'&&i==0){ div.style.left=(bx+18+2*r*(j-1)-w/2+r)+"px"; div.style.top=(by+2*r+r/2-h/2)+"px"; }
-    else{ div.style.left=(bx+18+2*r*(j-1)-w/2+((i%2)?0:r))+"px"; div.style.top=(by+r*i-h/2)+"px"; }
+    if(c=='D'&&i==0){ div.style.left=(18+2*r*(j-1)-w/2)+"px"; div.style.top=(r+r/2-h/2)+"px"; }
+    else if(c=='E'&&i==0){ div.style.left=(18+2*r*(j-1)-w/2+r)+"px"; div.style.top=(2*r+r/2-h/2)+"px"; }
+    else{ div.style.left=(18+2*r*(j-1)-w/2+((i%2)?0:r))+"px"; div.style.top=(r*i-h/2)+"px"; }
     div.style.visibility="visible";
   } }
   for(j=1; j<40; j++){ for(i=0; i<L-1; i++){ 
     div=document.createElement('div'); div.style.position="absolute";
     if(c=='D'&&i==0){ 
-      div.className="ir3"; div.style.left=(5+bx+2*r*(j-1)-r/2)+"px"; div.style.top=(by+r+r/2+r/4)+"px";
+      div.className="ir3"; div.style.left=(5+2*r*(j-1)-r/2)+"px"; div.style.top=(r+r/2+r/4)+"px";
       if(isPosi(dv[0][j])&&isPosi(dv[2][j-1])){ par.appendChild(div); }
     }
     else if(c=='E'&&i==0){ 
-      div.className="ir3"; div.style.left=(5+bx+2*r*(j-1)+r-r/2)+"px"; div.style.top=(by+2*r+r/2+r/4)+"px";
+      div.className="ir3"; div.style.left=(5+2*r*(j-1)+r-r/2)+"px"; div.style.top=(2*r+r/2+r/4)+"px";
       if(isPosi(dv[0][j])&&isPosi(dv[3][j])){ par.appendChild(div); }
     }
     else{ 
-      div.className="ir1"; div.style.left=(bx+2*r*(j-1)+((i%2)?0:r))-r/2+"px"; div.style.top=(by+r*i)+r/2+"px";
+      div.className="ir1"; div.style.left=(2*r*(j-1)+((i%2)?0:r))-r/2+"px"; div.style.top=(r*i)+r/2+"px";
       if(isPosi(dv[i][j])&&isPosi(dv[i+1][(i%2)?j-1:j])){ par.appendChild(div); }
     }
     div=document.createElement('div'); div.style.position="absolute";
     if(c=='D'&&i==0){
-      div.className="ir4"; div.style.left=(10+bx+2*r*(j-1)+r/2)+"px"; div.style.top=(by+r+r/2+r/4)+"px";
+      div.className="ir4"; div.style.left=(10+2*r*(j-1)+r/2)+"px"; div.style.top=(r+r/2+r/4)+"px";
       if(isPosi(dv[0][j])&&isPosi(dv[2][j])){ par.appendChild(div); }
     }
     else if(c=='E'&&i==0){ 
-      div.className="ir4"; div.style.left=(10+bx+2*r*(j-1)+r+r/2)+"px"; div.style.top=(by+2*r+r/2+r/4)+"px";
+      div.className="ir4"; div.style.left=(10+2*r*(j-1)+r+r/2)+"px"; div.style.top=(2*r+r/2+r/4)+"px";
       if(isPosi(dv[0][j])&&isPosi(dv[3][j+1])){ par.appendChild(div); }
     }
     else{
-      div.className="ir2"; div.style.left=(bx+2*r*(j-1)+((i%2)?0:r))+r/2+"px"; div.style.top=(by+r*i)+r/2+"px";
+      div.className="ir2"; div.style.left=(2*r*(j-1)+((i%2)?0:r))+r/2+"px"; div.style.top=(r*i+r/2)+"px";
       if(isPosi(dv[i][j])&&isPosi(dv[i+1][(i%2)?j:j+1])){ par.appendChild(div); }
     }
   } }
@@ -173,6 +172,6 @@ This script shows the AR-quiver Γ<sub>Δ</sub> for a given Dynkin quiver Δ.<br
 </select>
 <input class="butn" type="button" value="Draw!" onclick="main();"><br>
 <div id="Quiv"></div>You can change the direction by clicking the arrows.<br><br>
-<div id="ARquiv"></div><br>
+<div id="ARquiv" style="position:relative;"></div><br>
 </body>
 </html>
