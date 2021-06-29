@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Demo program of interval decomposition for CL(n)</title>
+<style>
+body { background-color:#000000; color:#FFFFFF; }
+a:link { color:#00FFFF; }
+a:visited { color:#66FFFF; }
+.el0{ color:#666666; }
+.el1{ color:#FFFFFF; }
+.dim{ font-size:10px; line-height:95%; font-family:monospace; text-align:center; }
+.cde{ text-align:center; margin:5px; }
+.prv{ color:#99FFFF; font-size:8px; line-height:95%; font-family:monospace; letter-spacing:0px; }
+.jso{ background:#000000; color:#00FF00; font-size:10px; font-family:monospace, serif; }
+</style>
+<script language="JavaScript">
+function mSum(X, Y){
+  const h=X.length, w=X[0].length, Z=new Array(h);
+  for(let i=0, j=0; i<h; i++){ for(Z[i]=new Array(w), j=0; j<w; j++){ Z[i][j]=X[i][j]^Y[i][j]; }}
+  return Z;
+}
+function mPrd(X,Y){	
+  const h=X.length, m=Y.length, w=Y[0].length, Z=new Array(h);
+  for(let i=0, j=0, k=0; i<h; i++){ for(Z[i]=new Array(w), j=0; j<w; j++){ for(Z[i][j]=0, k=0; k<m; k++){ Z[i][j]=Z[i][j]^(X[i][k]*Y[k][j]); } }}
+  return Z;
+}
+function mWrk(X){	
+  const h=X.length, w=X[0].length, Z=new Array(Math.min(h,w));
+  if(h<=w){ for(let i=0, j=0; i<h; i++){ for(Z[i]=new Array(w), j=0; j<w; j++){ Z[i][j]=X[i][j]; }} }
+  else{ for(let i=0, j=0; i<w; i++){ for(Z[i]=new Array(h), j=0; j<h; j++){ Z[i][j]=X[j][i]; }} }
+  return Z;
+}
+function rank(X){
+  let r=0, Y=mWrk(X);	
+  const redu = function(){
+  	const h=Y.length, w=Y[0].length, Z=new Array(h-1);
+  	let p=0, i=1, j=0;
+  	for(; p<w; p++){ if(Y[0][p]!=0){ r++; break; } }
+  	if(p==w){  for(; i<h; i++){ for(Z[i-1]=new Array(w), j=0; j<w; j++){ Z[i-1][j]=Y[i][j]; }} }
+	  else{   for(; i<h; i++){ for(Z[i-1]=new Array(w-1), j=0; j<w; j++){ 
+	  if(j<p){ Z[i-1][j]=Y[i][j]; }else if(j>p){ Z[i-1][j-1]=Y[i][j]^(Y[0][j]*Y[i][p]); } 
+  	}}   }
+  	return Z;
+  };
+  while(Y.length>0){ Y=redu(); }
+  return r;
+}
+function mGen(h, w){
+  const Z=new Array(h), r=[0, 1], l=r.length;	
+  for(let i=0, j=0; i<h; i++){ for(Z[i]=new Array(w), j=0; j<w; j++){ Z[i][j]=r[Math.floor(Math.random()*l)]; } }
+  return Z;
+}
+function E(h){	
+  const Z=new Array(h);
+  for(let i=0; i<h; i++){ Z[i]=(new Array(h)).fill(0); Z[i][i]=1; } 
+  return Z;
+}
+function yoko(X, Y){
+  const h=X.length, v=X[0].length, w=v+Y[0].length, Z=new Array(h);
+  for(let i=0, j=0; i<h; i++){  for(Z[i]=new Array(w), j=0; j<w; j++){ Z[i][j]=(j<v)?X[i][j]:Y[i][j-v]; }}
+  return Z;
+}
+function tate(X, Y){
+  const w=X[0].length, v=X.length, h=v+Y.length, Z=new Array(h);
+  for(let i=0, j=0; i<h; i++){  for(Z[i]=new Array(w), j=0; j<w; j++){ Z[i][j]=(i<v)?X[i][j]:Y[i-v][j]; }}
+  return Z;
+}
+function rRed(X, p, q){	
+  const h=X.length, w=X[0].length, Z=new Array(h);
+  for(let i=0, j=0; i<h; i++){
+   	if(i<=p||X[i][q]==0){ Z[i]=X[i]; }	
+  	else{ for(Z[i]=new Array(w), j=0; j<w; j++){ Z[i][j]=X[i][j]^X[p][j]; } }	
+  }
+  return Z;
+}
+function coker(X){
+  const h=X.length, w=X[0].length, Zrows=[];	
+  let Y=yoko(X, E(h));
+  for(let i=0; i<h; i++){
+  	for(let j=0; j<w; j++){
+  	if(Y[i][j]!=0){ Y=rRed(Y, i, j); break; }	
+  	else if(j==w-1){ Zrows.push(i); break; }	
+  	}
+  }
+  const s=Zrows.length, Z=new Array(s);	
+  for(let i=0, j=0; i<s; i++){ for(Z[i]=new Array(h), j=0; j<h; j++){ Z[i][j]=Y[Zrows[i]][w+j]; } }
+  return Z;
+}
+</script>
+<script language="JavaScript">
+let n=0, intv=[], map_c={}, delta={}, L={}, M={}, N={}, V=[];
+function compsq(W, X, d){
+  const hw=W.length, hx=X.length, PO=coker(tate(W, X)), s=PO.length, B=mGen(d,s), P=new Array(s), Q=new Array(s);
+  for(let i=0; i<s; i++){ P[i]=PO[i].slice(0,hw); Q[i]=PO[i].slice(hw); }	
+  return [mPrd(B,P), mPrd(B,Q)];
+}
+function get_input(){
+  L={}, M={}, N={}, V=[];
+  const mode="Rn";//document.getElementById("menu").value;
+  if(mode=="M1"){
+    n=4; V=[0,1,2,1,0,0,1,1];
+    L["1,2"]=[[0]]; L["2,3"]=[[1],[1]]; L["3,4"]=[[0,1]];
+    M["1,1"]=[[0]]; M["2,2"]=[[0]]; M["3,3"]=[[0],[1]]; M["4,4"]=[[1]];
+    N["1,2"]=[[0]]; N["2,3"]=[[0]]; N["3,4"]=[[1]];
+  }
+  else{	
+    n=Number(document.getElementById("P1").value);
+    for(let i=0; i<2*n; i++){ V.push(Math.floor(Math.random()*10)+Number(document.getElementById("P2").value)); }	//まずは次元ベクトルを生成する
+    M["1,1"]=mGen(V[0],V[n]);
+    for(let i=1; i<n; i++){ N[i+","+(i+1)]=mGen(V[n+i],V[n+i-1]); }	//続いて下段の写像たちをランダムに生成
+    for(let X=[], i=1; i<n; i++){ X=compsq(N[i+","+(i+1)], M[i+","+i], V[i]); M[(i+1)+","+(i+1)]=X[0]; L[i+","+(i+1)]=X[1]; }	//仕上げにpushoutを利用して四角を次々に保管していく
+  }
+	toJson(); view_input();
+}
+function hyoji(){ 
+  const T=document.getElementById("rslt");
+  T.style.display=(T.style.display=="none")?"block":"none";
+}
+function view_input(){
+	const s=Math.max(...V), t=Math.max(30, 12*s);
+  let vc="<table border='0' style='color:#FFFF99;font-size:15px;line-height:95%;'><tr>";
+  for(let i=0; i<n; i++){ vc+="<td>"+V[i]+"</td>"; }
+  vc+="</tr><tr>";
+  for(let i=n; i<2*n; i++){ vc+="<td>"+V[i]+"</td>"; }
+  vc+="</tr></table>";
+  let vw="　<input type='button' value='Toggle between showing and hiding details.' onclick='hyoji();'>"
+  document.getElementById("dmvc").innerHTML="<table border='0'><tr><td>dimension vector：</td><td>"+vc+"</td><td>"+vw+"</td></tr></table>";
+
+  const size=" height='"+t+"' width='"+t+"'", bsty="solid 1px #FFFF00";
+  let cd="<table border='0' cellspacing='0' class='prv'><tr>";
+  for(let i=1; i<n; i++){ cd+="<td align='center' valign='bottom'"+size+">"+L[i+","+(i+1)].map(e=>e.join("")).join("<br>")+"</td>"; }
+  cd+="<td></td></tr><tr>";
+  for(let i=1; i<n; i++){ cd+="<td style='border-left:"+bsty+";border-top:"+bsty+";border-bottom:"+bsty+";border-right:"+bsty+";'"+size+">"+M[i+","+i].map(e=>e.join("")).join("<br>")+"</td>"; }
+  cd+="<td"+size+">"+M[n+","+n].map(e=>e.join("")).join("<br>")+"</td></tr><tr>";
+  for(let i=1; i<n; i++){ cd+="<td align='center' valign='top'"+size+">"+N[i+","+(i+1)].map(e=>e.join("")).join("<br>")+"</td>"; }
+  cd+="<td></td></tr></table>";
+  document.getElementById("rslt").innerHTML=cd;
+  //pre_calc();
+}
+
+function pre_calc(){
+  for(let i=1; i<=n; i++){ L[i+","+i]=idenMat(V[i-1]); N[i+","+i]=idenMat(V[n+i-1]); }
+  for(let w=2; w<n; w++){ for(let i=1; i+w<=n; i++){ L[i+","+(i+w)]=mPrd(L[(i+1)+","+(i+w)], L[i+","+(i+1)]); N[i+","+(i+w)]=mPrd(N[(i+1)+","+(i+w)], N[i+","+(i+1)]); } }
+  for(let w=1; w<n; w++){ for(let i=1; i+w<=n; i++){ M[i+","+(i+w)]=mPrd(L[i+","+(i+w)], M[i+","+i]); } }
+	gene_intv();
+}
+
+function gene_intv(){
+  intv=[];
+	for(let b=1; b<=n; b++){ for(let d=b; d<=n; d++){ 
+		intv.push((n+1)+","+0+","+b+","+d); intv.push(b+","+d+","+(n+1)+","+0);
+	} }
+  for(let b2=1; b2<=n; b2++){ for(let b1=b2; b1<=n; b1++){ for(let d2=b1; d2<=n; d2++){ for(let d1=d2; d1<=n; d1++){ 
+	  intv.push(b1+","+d1+","+b2+","+d2);
+	} } } }
+	calc_map_c();
+}
+
+function zeroMat(h, w){
+  const Z=new Array(h);
+  for(let i=0; i<h; i++){ Z[i]=(new Array(w)).fill(0); }
+  return Z;
+}
+
+function idenMat(s){
+	if(s==0){ return [[0]]; } 
+  const Z=new Array(s);
+  for(let i=0; i<s; i++){ Z[i]=(new Array(s)).fill(0); Z[i][i]=1; }
+  return Z;
+}
+
+function snake(MatList){
+	if(MatList.length==0){ return []; }
+	if(MatList.length==1){ return MatList[0]; }
+  let rows=[0], cols=[0], h=MatList[1].length, w=MatList[0][0].length;
+  for(let i=1; i<MatList.length; i++){
+    if(i%2){ cols.push(w); w+=MatList[i][0].length; }
+		else{ rows.push(h); h+=MatList[i].length; }
+  }
+  const Z=zeroMat(h, w);
+  for(let k=0; k<MatList.length; k++){ for(let i=0; i<MatList[k].length; i++){ for(let j=0; j<MatList[k][0].length; j++){
+    Z[rows[k>>1]+i][cols[(k+1)>>1]+j]=MatList[k][i][j];
+	} } } 
+  return Z;
+}
+
+function caseAn(MatList){
+	const l=MatList.length, m=(l&1)?1:-1;
+	if(l==0){ return 0; }
+	if(l==1){ return rank(MatList[0]); }
+  let z=m*rank(snake(MatList));
+	const Z=MatList.pop();
+  z-=m*rank(snake(MatList));
+	MatList[0]=[[]];
+	z+=m*rank(snake(MatList));
+	MatList.push(Z);
+  z-=m*rank(snake(MatList));
+  return z;
+}
+
+function calc_map_c(){
+  map_c={};
+	const mode=document.getElementById("comp").value;
+	for(let I of intv){
+		const [b1, d1, b2, d2]=I.split(',').map(e=>Number(e)); let MatList;
+    if(d1<=0){ MatList=[L[b2+","+d2]]; }
+		else if(d2<=0){ MatList=[N[b1+","+d1]]; }
+		else if(b1==b2&&d1==d2){ MatList=[M[b1+","+d2]]; }
+		else if(b1==b2){ MatList=(mode=="ss")?[M[b1+","+d2], M[b1+","+d2], N[b1+","+d1]]:[N[b1+","+d1], N[d2+","+d1], M[d2+","+d2]]; }
+		else if(d1==d2){ MatList=(mode=="ss")?[L[b2+","+d2], M[b1+","+d2]]:[M[b1+","+b1], L[b2+","+b1], L[b2+","+d2]]; }
+		else{ MatList=(mode=="ss")?[L[b2+","+d2], M[b1+","+d2], N[b1+","+d1]]:[M[b1+","+b1], L[b2+","+b1], L[b2+","+d2], M[d2+","+d2], N[d2+","+d1]]; }
+    map_c[I]=caseAn(MatList);
+	}
+	calc_delta();
+}
+
+function get_cov(I){
+	const [b1, d1, b2, d2]=I.split(',').map(e=>Number(e)), covI=[];
+	if(d2==0){ covI.push(b1+","+d1+","+b1+","+b1); } 
+  if(d1==0){ covI.push(d2+","+d2+","+b2+","+d2); } 
+	if(b2<=d2&&1<b2){ covI.push(b1+","+d1+","+(b2-1)+","+d2); } 
+	if(b1<=d1&&d1<n){ covI.push(b1+","+(d1+1)+","+b2+","+d2); } 
+  if(b2<=d2&&(d2<d1||(d2<n&&d1==0))){ covI.push(b1+","+d1+","+b2+","+(d2+1)); } 
+	if(b1<=d1&&(b2<b1||(1<b1&&d2==0))){ covI.push((b1-1)+","+d1+","+b2+","+d2); } 
+  return covI;
+}
+
+function join_intv(I, J){
+	const [b1, d1, b2, d2]=I.split(',').map(e=>Number(e)), [c1, e1, c2, e2]=J.split(',').map(e=>Number(e));
+  let [a, b, c, d]=[Math.min(b1, c1), Math.max(d1, e1), Math.min(b2, c2), Math.max(d2, e2)];
+  if(c<=d&&a<c){ c=a; } 
+	if(a<=b&&b<d){ b=d; } 
+	return [a, b, c, d].join(",");
+}
+
+function calc_delta(){
+	delta={};
+  for(let I of intv){
+    const covI=get_cov(I), t=covI.length, subs=1<<t; delta[I]=0;
+		for(let s=0; s<subs; s++){ 
+      let l=0, J=I;
+      for(let k=0; k<t; k++){ 
+				if((1<<k)&s){ J=join_intv(J, covI[k]); l++; }
+			}
+		  delta[I]+=Math.pow(-1, l)*map_c[J];
+		}
+	}
+	show_rslt();
+}
+
+function dimv(I){
+	const [b1, d1, b2, d2]=I.split(',').map(e=>Number(e)), a="<a class='el0'>";
+  function line(b, d){
+    if(b>d){ return a+"0".repeat(n)+"</a>"; }
+    return a+("0".repeat(b-1))+"</a>"+("1".repeat(d-b+1))+a+("0".repeat(n-d))+"</a>";
+	}
+  return line(b2, d2)+"<br>"+line(b1, d1);
+}
+
+function show_rslt(){
+	function col(x){
+	  if(x>0){ return "#003366"; }
+		if(x<0){ return "#660033"; }
+    return "#000000";
+	}
+  let cd="<table border='1'>";
+  const l=intv.length, c=12;	
+	for(let i=0; i<l; i++){
+		const I=intv[i];
+	  if(i%c==0){ cd+="<tr>"; }
+		cd+="<td class='dim' bgcolor='"+col(delta[I])+"'>"+dimv(I)+"<br><p class='cde'>c:"+map_c[I]+", δ:"+delta[I]+"</p></td>";
+	  if(i%c==c-1){ cd+="</tr>"; }
+	}
+	cd+=("<td></td>".repeat((c-(l%c))%c))+((l%c)?"</tr>":"")+"</table>";
+  document.getElementById("comm").innerHTML="区間表現は以下の<a style='color:#FFFF00;'> "+l+" </a>個";
+  document.getElementById("info").innerHTML=cd;
+}
+function toJson(){
+  let cd='{\n\t"rows" : 2,\n\t"cols" : '+n+',\n\t"dimensions" : {\n';
+  for(let f=0, r=1; r<=2; r++){ for(let c=1; c<=n; c++){
+    let d=V[(2-r)*n+(c-1)];
+    if(d){ cd+=(((f)?',\n':'')+'\t\t"'+r+'_'+c+'" : '+d); f=1; }
+  } }
+  cd+='},\n\t"matrices" : {\n';
+  let F=false;
+  for(let c=1; c<n; c++){  
+    let m=N[c+","+(c+1)], h=m.length, w=m[0].length, d=m[0][0];
+    if(h>1||w>1||d>0){
+      cd+=(((F)?',\n':'')+'\t\t"1_'+c+'_1_'+(c+1)+'" : [');
+      for(let i=0; i<h; i++){ cd+=(((i)?',':'')+'['+String(m[i])+']'); }
+      cd+=']'; F=true;
+    }
+  }
+  for(let c=1; c<=n; c++){  
+    let m=M[c+","+c], h=m.length, w=m[0].length, d=m[0][0];
+    if(h>1||w>1||d>0){
+      cd+=(((F)?',\n':'')+'\t\t"1_'+c+'_2_'+c+'" : [');
+      for(let i=0; i<h; i++){ cd+=(((i)?',':'')+'['+String(m[i])+']'); }
+      cd+=']'; F=true;
+    }
+  }
+  for(let c=1; c<n; c++){  
+    let m=L[c+","+(c+1)], h=m.length, w=m[0].length, d=m[0][0];
+    if(h>1||w>1||d>0){
+      cd+=(((F)?',\n':'')+'\t\t"2_'+c+'_2_'+(c+1)+'" : [');
+      for(let i=0; i<h; i++){ cd+=(((i)?',':'')+'['+String(m[i])+']'); }
+      cd+=']'; F=true;
+    }
+  }
+  cd+='}\n}';
+  document.getElementById("json").innerHTML=cd;
+}
+</script>
+</head>
+<body>
+<a style="color:#88FF88;font-size:36px;">Demo program of interval decomposition for CL(n)</a><br>
+Randomly generate a representation of CL(n) and compute its interval approximation!<br>
+ladder length: <input id="P1" type="range" min="2" max="12" value="5" step="1" onchange="P1V.innerText=P1.value;"> (n = <span id="P1V" style="color:#FFFF66;">5</span>)　
+lowest dimension: <input id="P2" type="range" min="2" max="200" value="10" step="1" onchange="P2V.innerText=P2.value;" style="width:600px;"> (p = <span id="P2V" style="color:#66FF66;">10</span>)　
+<br><input type="button" value="Generate a representation!"  style="background:#000000;color:#FFFF99;font-size:18px;font-family:monospace;" onclick="get_input();">
+<hr>
+<table border="0" cellpadding="0" cellspacing="0">
+  <tr><td><a style="color:#FF99FF;font-size:24px;">Generated representation　</a></td><td><div id="dmvc"></div></td></tr>
+</table>
+Text data for Emerson's tool<br>
+<textarea id="json" rows="8" cols="240" class="jso"></textarea><br>
+<input type="button" value="Compute the interval approximation of this representation"  style="background:#000000;color:#00FFFF;font-size:18px;font-family:monospace;" onclick="pre_calc();">
+ by <select id="comp" style="background:#000000;color:#99FF99;font-size:18px;line-height:95%;font-family:monospace;">
+  <option value="ss" selected>sink-source</option>
+</select> compression.
+<div id="rslt" style="display:none;"></div><hr>
+<table border="0" cellpadding="0" cellspacing="0"><tr><td><a style="color:#FF99FF;font-size:24px;">Calculation results　</a></td><td><div id="comm" style="display:none;"></div></td></tr></table>
+<div id="info"></div>
+</body>
+</html>
