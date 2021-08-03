@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Demo program of interval decomposition for CL(n)</title>
+<title>Demo program of interval approximation for CL(n)</title>
 <style>
 body { background-color:#000000; color:#FFFFFF; }
 a:link { color:#00FFFF; }
@@ -106,10 +106,10 @@ function get_input(){
   }
   else{	
     n=Number(document.getElementById("P1").value);
-    for(let i=0; i<2*n; i++){ V.push(Math.floor(Math.random()*10)+Number(document.getElementById("P2").value)); }	//まずは次元ベクトルを生成する
+    for(let i=0; i<2*n; i++){ V.push(Math.floor(Math.random()*10)+Number(document.getElementById("P2").value)); }	
     M["1,1"]=mGen(V[0],V[n]);
-    for(let i=1; i<n; i++){ N[i+","+(i+1)]=mGen(V[n+i],V[n+i-1]); }	//続いて下段の写像たちをランダムに生成
-    for(let X=[], i=1; i<n; i++){ X=compsq(N[i+","+(i+1)], M[i+","+i], V[i]); M[(i+1)+","+(i+1)]=X[0]; L[i+","+(i+1)]=X[1]; }	//仕上げにpushoutを利用して四角を次々に保管していく
+    for(let i=1; i<n; i++){ N[i+","+(i+1)]=mGen(V[n+i],V[n+i-1]); }
+    for(let X=[], i=1; i<n; i++){ X=compsq(N[i+","+(i+1)], M[i+","+i], V[i]); M[(i+1)+","+(i+1)]=X[0]; L[i+","+(i+1)]=X[1]; }	
   }
 	toJson(); view_input();
 }
@@ -273,11 +273,11 @@ function show_rslt(){
 	  if(i%c==c-1){ cd+="</tr>"; }
 	}
 	cd+=("<td></td>".repeat((c-(l%c))%c))+((l%c)?"</tr>":"")+"</table>";
-  document.getElementById("comm").innerHTML="区間表現は以下の<a style='color:#FFFF00;'> "+l+" </a>個";
+  //document.getElementById("comm").innerHTML="区間表現は以下の<a style='color:#FFFF00;'> "+l+" </a>個";
   document.getElementById("info").innerHTML=cd;
 }
 function toJson(){
-  let cd='{\n\t"rows" : 2,\n\t"cols" : '+n+',\n\t"dimensions" : {\n';
+  let cd='{\n\t"field" : 2,\n\t"rows" : 2,\n\t"cols" : '+n+',\n\t"dimensions" : {\n';
   for(let f=0, r=1; r<=2; r++){ for(let c=1; c<=n; c++){
     let d=V[(2-r)*n+(c-1)];
     if(d){ cd+=(((f)?',\n':'')+'\t\t"'+r+'_'+c+'" : '+d); f=1; }
@@ -314,7 +314,7 @@ function toJson(){
 </script>
 </head>
 <body>
-<a style="color:#88FF88;font-size:36px;">Demo program of interval decomposition for CL(n)</a><br>
+<a style="color:#88FF88;font-size:36px;">Demo program of interval approximation for CL(n)</a><br>
 Randomly generate a representation of CL(n) and compute its interval approximation!<br>
 ladder length: <input id="P1" type="range" min="2" max="12" value="5" step="1" onchange="P1V.innerText=P1.value;"> (n = <span id="P1V" style="color:#FFFF66;">5</span>)　
 lowest dimension: <input id="P2" type="range" min="2" max="200" value="10" step="1" onchange="P2V.innerText=P2.value;" style="width:600px;"> (p = <span id="P2V" style="color:#66FF66;">10</span>)　
