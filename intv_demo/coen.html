@@ -85,19 +85,21 @@ function coker(X){
   }
   const s=Zrows.length, Z=new Array(s);	
   for(let i=0, j=0; i<s; i++){ for(Z[i]=new Array(h), j=0; j<h; j++){ Z[i][j]=Y[Zrows[i]][w+j]; } }
+  if(Z.length==0){ Z.push((new Array(h)).fill(0)); } //Cokerが0になるケースだけ例外処置
   return Z;
 }
 </script>
 <script language="JavaScript">
 let n=0, intv=[], map_c={}, delta={}, L={}, M={}, N={}, V=[];
 function compsq(W, X, d){
-  const hw=W.length, hx=X.length, PO=coker(tate(W, X)), s=PO.length, B=mGen(d,s), P=new Array(s), Q=new Array(s);
-  for(let i=0; i<s; i++){ P[i]=PO[i].slice(0,hw); Q[i]=PO[i].slice(hw); }	
-  return [mPrd(B,P), mPrd(B,Q)];
+  const hw=W.length, hx=X.length, PO=coker(tate(W, X)), s=PO.length, B=mGen(d, s), P=new Array(s), Q=new Array(s);
+  for(let i=0; i<s; i++){ P[i]=PO[i].slice(0, hw); Q[i]=PO[i].slice(hw); }	
+  return [mPrd(B, P), mPrd(B, Q)];
 }
 function get_input(){
   L={}, M={}, N={}, V=[];
   const mode="Rn";//document.getElementById("menu").value;
+  document.getElementById("info").innerHTML="";
   if(mode=="M1"){
     n=4; V=[0,1,2,1,0,0,1,1];
     L["1,2"]=[[0]]; L["2,3"]=[[1],[1]]; L["3,4"]=[[0,1]];
@@ -136,7 +138,7 @@ function view_input(){
   for(let i=1; i<n; i++){ cd+="<td align='center' valign='top'"+size+">"+N[i+","+(i+1)].map(e=>e.join("")).join("<br>")+"</td>"; }
   cd+="<td></td></tr></table>";
   document.getElementById("rslt").innerHTML=cd;
-  //pre_calc();
+  pre_calc();
 }
 
 function pre_calc(){
@@ -201,7 +203,7 @@ function caseAn(MatList){
 
 function calc_map_c(){
   map_c={};
-	const mode=document.getElementById("comp").value;
+	const mode="ss";//document.getElementById("comp").value;
 	for(let I of intv){
 		const [b1, d1, b2, d2]=I.split(',').map(e=>Number(e)); let MatList;
     if(d1<=0){ MatList=[L[b2+","+d2]]; }
@@ -269,7 +271,7 @@ function show_rslt(){
 	for(let i=0; i<l; i++){
 		const I=intv[i];
 	  if(i%c==0){ cd+="<tr>"; }
-		cd+="<td class='dim' bgcolor='"+col(delta[I])+"'>"+dimv(I)+"<br><p class='cde'>c:"+map_c[I]+", δ:"+delta[I]+"</p></td>";
+		cd+="<td class='dim' bgcolor='"+col(delta[I])+"'>"+dimv(I)+"<br><p class='cde'>c:"+map_c[I]+", ∂:"+delta[I]+"</p></td>";
 	  if(i%c==c-1){ cd+="</tr>"; }
 	}
 	cd+=("<td></td>".repeat((c-(l%c))%c))+((l%c)?"</tr>":"")+"</table>";
@@ -316,21 +318,23 @@ function toJson(){
 <body>
 <a style="color:#88FF88;font-size:36px;">Demo program of interval approximation for CL(n)</a><br>
 指定した自然数nに対してCL(n)の表現をランダムに生成し、その区間近似を計算するデモプログラムです！<br>
-基礎体の標数は2です。
+基礎体の標数は2で、圧縮はss方式になっています。
 梯子の長さ: <input id="P1" type="range" min="2" max="10" value="5" step="1" onchange="P1V.innerText=P1.value;"> (n = <span id="P1V" style="color:#FFFF66;">5</span>)　<br>
 頂点に乗せるベクトル空間の最小次元の目安: <input id="P2" type="range" min="2" max="50" value="10" step="1" onchange="P2V.innerText=P2.value;" style="width:300px;"> (p = <span id="P2V" style="color:#66FF66;">10</span>)　
-<br><input type="button" value="表現をランダムに生成する！"  style="background:#000000;color:#FFFF99;font-size:18px;font-family:monospace;" onclick="get_input();">
+<hr><input type="button" value="表現をランダムに生成し、その区間近似を計算する！"  style="background:#000000;color:#CC00FF;font-size:24px;font-family:monospace;" onclick="get_input();">
 <hr>
 <table border="0" cellpadding="0" cellspacing="0">
   <tr><td><a style="color:#FF99FF;font-size:24px;">生成された表現　</a></td><td><div id="dmvc"></div></td></tr>
 </table>
+<div id="rslt" style="display:none;"></div>
 テキストデータ（for Emerson's tool）<br>
-<textarea id="json" rows="8" cols="240" class="jso"></textarea><br>
+<textarea id="json" rows="4" cols="180" class="jso"></textarea><br>
+<!--
 <input type="button" value="この表現の区間近似を計算する！"  style="background:#000000;color:#00FFFF;font-size:18px;font-family:monospace;" onclick="pre_calc();">
- 圧縮方式：<select id="comp" style="background:#000000;color:#99FF99;font-size:18px;line-height:95%;font-family:monospace;">
+  圧縮方式：<select id="comp" style="background:#000000;color:#99FF99;font-size:18px;line-height:95%;font-family:monospace;">
   <option value="ss" selected>sink-source</option>
-</select> 
-<div id="rslt" style="display:none;"></div><hr>
+-->
+</select><hr>
 <table border="0" cellpadding="0" cellspacing="0"><tr><td><a style="color:#FF99FF;font-size:24px;">計算結果　</a></td><td><div id="comm" style="display:none;"></div></td></tr></table>
 <div id="info"></div>
 </body>

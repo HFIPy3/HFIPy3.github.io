@@ -85,6 +85,7 @@ function coker(X){
   }
   const s=Zrows.length, Z=new Array(s);	
   for(let i=0, j=0; i<s; i++){ for(Z[i]=new Array(h), j=0; j<h; j++){ Z[i][j]=Y[Zrows[i]][w+j]; } }
+  if(Z.length==0){ Z.push((new Array(h)).fill(0)); } //Cokerが0になるケース
   return Z;
 }
 </script>
